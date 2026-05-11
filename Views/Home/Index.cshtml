@@ -1,0 +1,167 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row mb-3">
+    <div class="col">
+        <h4><i class="bi bi-speedometer2 text-success"></i> Dashboard — Моніторинг сенсорів</h4>
+        <small class="text-muted">Дані оновлюються в реальному часі через SignalR</small>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-sm btn-outline-success" id="btnToggle" onclick="toggleSimulation()">
+            <i class="bi bi-pause-fill"></i> Зупинити
+        </button>
+    </div>
+</div>
+
+<!-- Картки сенсорів -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-thermometer-half text-danger"></i> Температура</span>
+                <span class="badge bg-danger" id="tempBadge">–</span>
+            </div>
+            <div class="card-body text-center">
+                <div class="sensor-value text-danger" id="tempValue">–</div>
+                <small class="text-muted">°C</small>
+                <div class="mt-2"><canvas id="tempChart" height="80"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-droplet-half text-info"></i> Вологість</span>
+                <span class="badge bg-info text-dark" id="humBadge">–</span>
+            </div>
+            <div class="card-body text-center">
+                <div class="sensor-value text-info" id="humValue">–</div>
+                <small class="text-muted">%</small>
+                <div class="mt-2"><canvas id="humChart" height="80"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-speedometer text-warning"></i> Тиск</span>
+                <span class="badge bg-warning text-dark" id="presBadge">–</span>
+            </div>
+            <div class="card-body text-center">
+                <div class="sensor-value text-warning" id="presValue">–</div>
+                <small class="text-muted">hPa</small>
+                <div class="mt-2"><canvas id="presChart" height="80"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Зведений графік + Алерти -->
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-graph-up"></i> Зведений графік</div>
+            <div class="card-body"><canvas id="mainChart" height="120"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-exclamation-triangle text-danger"></i> Алерти</span>
+                <span class="badge bg-danger" id="alertCount">0</span>
+            </div>
+            <div class="card-body p-2" style="overflow-y:auto; max-height:300px;" id="alertsList">
+                <small class="text-muted">Алертів ще немає</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const MAX = 30;
+        const labels = [];
+        const tempData = [], humData = [], presData = [];
+
+        const chartConfig = (label, color, data) => ({
+            type: 'line',
+            data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '22', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4 }] },
+            options: { animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } } } }
+        });
+
+        const tempChart = new Chart(document.getElementById('tempChart'), chartConfig('Температура', '#f85149', tempData));
+        const humChart = new Chart(document.getElementById('humChart'), chartConfig('Вологість', '#58a6ff', humData));
+        const presChart = new Chart(document.getElementById('presChart'), chartConfig('Тиск', '#d29922', presData));
+
+        const mainChart = new Chart(document.getElementById('mainChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Температура (°C)', data: tempData, borderColor: '#f85149', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                    { label: 'Вологість (%)', data: humData, borderColor: '#58a6ff', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                ]
+            },
+            options: { animation: false, plugins: { legend: { labels: { color: '#8b949e' } } }, scales: { x: { display: false }, y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } } } }
+        });
+
+        function updateChart(chart) { chart.update(); }
+
+        const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+
+        connection.on("ReceiveSensorData", data => {
+            const time = new Date(data.timestamp).toLocaleTimeString('uk');
+            labels.push(time);
+            tempData.push(data.temperature);
+            humData.push(data.humidity);
+            presData.push(data.pressure);
+
+            if (labels.length > MAX) { labels.shift(); tempData.shift(); humData.shift(); presData.shift(); }
+
+            document.getElementById('tempValue').textContent = data.temperature;
+            document.getElementById('humValue').textContent = data.humidity;
+            document.getElementById('presValue').textContent = data.pressure;
+            document.getElementById('tempBadge').textContent = data.temperature + '°C';
+            document.getElementById('humBadge').textContent = data.humidity + '%';
+            document.getElementById('presBadge').textContent = data.pressure + ' hPa';
+
+            if (data.temperature > 35) addAlert('danger', 'Температура', data.temperature, 35, '°C');
+            if (data.humidity > 80) addAlert('warning', 'Вологість', data.humidity, 80, '%');
+
+            [tempChart, humChart, presChart, mainChart].forEach(updateChart);
+        });
+
+        connection.start();
+
+        function addAlert(type, name, val, threshold, unit) {
+            const list = document.getElementById('alertsList');
+            const count = document.getElementById('alertCount');
+            const time = new Date().toLocaleTimeString('uk');
+            const div = document.createElement('div');
+            div.className = `alert-item alert-${type}`;
+            div.innerHTML = `<strong>${name}</strong>: ${val}${unit} &gt; ${threshold}${unit} <small class="text-muted float-end">${time}</small>`;
+            if (list.querySelector('small')) list.innerHTML = '';
+            list.prepend(div);
+            count.textContent = list.children.length;
+            if (list.children.length > 15) list.removeChild(list.lastChild);
+        }
+
+        async function toggleSimulation() {
+            const res = await fetch('/api/data/simulation/toggle', { method: 'POST' });
+            const data = await res.json();
+            const btn = document.getElementById('btnToggle');
+            const dot = document.getElementById('navStatusDot');
+            const txt = document.getElementById('navStatusText');
+            if (data.running) {
+                btn.innerHTML = '<i class="bi bi-pause-fill"></i> Зупинити';
+                btn.className = 'btn btn-sm btn-outline-success';
+                dot.className = 'status-dot running'; txt.textContent = 'Live';
+            } else {
+                btn.innerHTML = '<i class="bi bi-play-fill"></i> Запустити';
+                btn.className = 'btn btn-sm btn-outline-danger';
+                dot.className = 'status-dot stopped'; txt.textContent = 'Зупинено';
+            }
+        }
+    </script>
+}

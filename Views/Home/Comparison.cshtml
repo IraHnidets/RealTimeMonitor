@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "Порівняння технологій";
+}
+
+<h4><i class="bi bi-table text-info"></i> Порівняльний аналіз технологій</h4>
+<p class="text-muted mb-4">REST API vs WebSocket vs SignalR — переваги, недоліки та сфери застосування.</p>
+
+<div class="card mb-4">
+    <div class="card-body p-0">
+        <table class="table table-dark table-bordered table-hover mb-0">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Критерій</th>
+                    <th class="text-warning"><i class="bi bi-braces"></i> REST API</th>
+                    <th class="text-success"><i class="bi bi-plug"></i> WebSocket</th>
+                    <th class="text-info"><i class="bi bi-broadcast"></i> SignalR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Тип з'єднання</td><td>Одноразовий запит</td><td>Постійне</td><td>Постійне (абстракція)</td></tr>
+                <tr><td>Ініціатор</td><td>Клієнт</td><td>Обидва</td><td>Обидва</td></tr>
+                <tr><td>Протокол</td><td>HTTP/HTTPS</td><td>ws:// / wss://</td><td>WebSocket / SSE / LP</td></tr>
+                <tr><td>Real-time</td><td class="text-danger">✗ Ні</td><td class="text-success">✓ Так</td><td class="text-success">✓ Так</td></tr>
+                <tr><td>Складність реалізації</td><td class="text-success">Низька</td><td class="text-warning">Середня</td><td class="text-success">Низька</td></tr>
+                <tr><td>Масштабованість</td><td class="text-success">Висока</td><td class="text-warning">Середня</td><td class="text-success">Висока</td></tr>
+                <tr><td>Підтримка браузерів</td><td class="text-success">Всі</td><td class="text-success">Всі сучасні</td><td class="text-success">Всі (fallback)</td></tr>
+                <tr><td>Використання в .NET</td><td>Controller / Minimal API</td><td>UseWebSockets()</td><td>Hub + клієнт JS</td></tr>
+                <tr><td>Застосування</td><td>CRUD, мобільні API</td><td>Ігри, трейдинг</td><td>Чат, дашборди, IoT</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-header text-warning"><i class="bi bi-braces"></i> REST API</div>
+            <div class="card-body">
+                <p class="small">Архітектурний стиль для побудови вебсервісів на основі HTTP. Кожен запит є незалежним — сервер не зберігає стан клієнта.</p>
+                <strong class="text-success small">Переваги:</strong>
+                <ul class="small text-muted"><li>Простота реалізації</li><li>Кешування відповідей</li><li>Стандартний інтерфейс</li></ul>
+                <strong class="text-danger small">Недоліки:</strong>
+                <ul class="small text-muted"><li>Немає real-time оновлень</li><li>Overhead на кожен запит</li></ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-header text-success"><i class="bi bi-plug"></i> WebSocket</div>
+            <div class="card-body">
+                <p class="small">Низькорівневий протокол для повнодуплексного обміну даними через одне TCP-з'єднання.</p>
+                <strong class="text-success small">Переваги:</strong>
+                <ul class="small text-muted"><li>Мінімальна затримка</li><li>Двостороннє з'єднання</li><li>Малий розмір заголовків</li></ul>
+                <strong class="text-danger small">Недоліки:</strong>
+                <ul class="small text-muted"><li>Немає автоматичного перепідключення</li><li>Складніша логіка</li></ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-header text-info"><i class="bi bi-broadcast"></i> SignalR</div>
+            <div class="card-body">
+                <p class="small">Бібліотека ASP.NET Core для real-time комунікації. Автоматично обирає найкращий транспорт.</p>
+                <strong class="text-success small">Переваги:</strong>
+                <ul class="small text-muted"><li>Автоматичне перепідключення</li><li>Групи та широкомовні виклики</li><li>Fallback транспорт</li></ul>
+                <strong class="text-danger small">Недоліки:</strong>
+                <ul class="small text-muted"><li>Залежність від ASP.NET</li><li>Більше пам'яті ніж WebSocket</li></ul>
+            </div>
+        </div>
+    </div>
+</div>

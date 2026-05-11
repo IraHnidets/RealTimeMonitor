@@ -1,0 +1,86 @@
+﻿@{
+    ViewData["Title"] = "WebSocket Demo";
+}
+
+<h4><i class="bi bi-plug text-success"></i> WebSocket — Потік даних у реальному часі</h4>
+<p class="text-muted">Демонстрація двостороннього з'єднання WebSocket між клієнтом і сервером.</p>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Потік повідомлень</span>
+                <div>
+                    <button class="btn btn-sm btn-success me-1" onclick="startWS()"><i class="bi bi-play-fill"></i> Підключити</button>
+                    <button class="btn btn-sm btn-danger" onclick="stopWS()"><i class="bi bi-stop-fill"></i> Відключити</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="wsLog" style="height:400px;overflow-y:auto;font-family:monospace;font-size:13px;padding:16px;background:#0d1117;">
+                    <span class="text-muted">Натисніть "Підключити" для старту...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">Статус з'єднання</div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="status-dot stopped me-2" id="wsDot"></span>
+                    <span id="wsStatus">Відключено</span>
+                </div>
+                <small class="text-muted">Отримано повідомлень:</small>
+                <div class="sensor-value text-success" id="wsCount">0</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Як це працює</div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <p>WebSocket встановлює <strong>постійне двостороннє з'єднання</strong> між клієнтом і сервером.</p>
+                    <p>На відміну від REST, сервер сам надсилає дані клієнту без очікування запиту.</p>
+                    <p>Протокол: <code>ws://</code> або <code>wss://</code></p>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let ws, count = 0;
+
+        function startWS() {
+            const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${location.host}/ws`);
+            ws.onopen = () => {
+                document.getElementById('wsDot').className = 'status-dot running me-2';
+                document.getElementById('wsStatus').textContent = 'Підключено';
+                log('✅ З\'єднання встановлено', 'text-success');
+            };
+            ws.onmessage = e => {
+                count++;
+                document.getElementById('wsCount').textContent = count;
+                log(e.data, 'text-info');
+            };
+            ws.onclose = () => {
+                document.getElementById('wsDot').className = 'status-dot stopped me-2';
+                document.getElementById('wsStatus').textContent = 'Відключено';
+                log('🔴 З\'єднання закрито', 'text-danger');
+            };
+        }
+
+        function stopWS() { if (ws) ws.close(); }
+
+        function log(msg, cls = '') {
+            const div = document.getElementById('wsLog');
+            const line = document.createElement('div');
+            line.className = cls;
+            line.textContent = msg;
+            if (div.querySelector('span')) div.innerHTML = '';
+            div.appendChild(line);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+}
